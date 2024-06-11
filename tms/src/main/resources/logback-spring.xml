@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+    <!-- logfile path: ${CLASSPATH}/${LOG_DIR}}   -->
+
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+
+    <property name="logDir" value="${APP_LOG_PATH}"/>
+    <property name="LOG_PATTERN"
+              value="[%d{YYYY-MM-dd HH:mm:ss.SSS z, Asia/Seoul}] [traceID=%mdc{trace_id} span_id=%mdc{span_id} trace_flags=%mdc{trace_flags}] [%-5level] [%thread] %logger{36}:%L - %msg %n"/>
+
+    <property name="MAX_PERIOD_IN_DAYS" value="90"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDir}/${HOSTNAME}.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logDir}/${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+
+                -
+                <maxFileSize>1GB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <!--    <appender name="SYSTEM" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+    <!--        <file>${LOG_DIR}/syslog.log</file>-->
+    <!--        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">-->
+    <!--            <charset>UTF-8</charset>-->
+    <!--            <pattern>${LOG_PATTERN}</pattern>-->
+    <!--        </encoder>-->
+    <!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+    <!--            <fileNamePattern>${LOG_DIR}/syslog/syslog.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>-->
+    <!--            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">-->
+    <!--                <maxFileSize>1GB</maxFileSize>-->
+    <!--            </timeBasedFileNamingAndTriggeringPolicy>-->
+    <!--            <maxHistory>${MAX_PERIOD_IN_DAYS}</maxHistory>-->
+    <!--        </rollingPolicy>-->
+    <!--    </appender>-->
+
+    <appender name="HIKARI_CP" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/hikari-cp.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/hikari-cp/hikari-cp.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1GB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${MAX_PERIOD_IN_DAYS}</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- When you make like a service.access.AccessLogService, then you should use it.  -->
+    <!--    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+    <!--        <file>${LOG_DIR}/accesslog.log</file>-->
+    <!--        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">-->
+    <!--            <charset>UTF-8</charset>-->
+    <!--            <pattern>${LOG_PATTERN}</pattern>-->
+    <!--        </encoder>-->
+    <!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+    <!--            <fileNamePattern>${LOG_DIR}/accesslog/accesslog.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>-->
+    <!--            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">-->
+    <!--                <maxFileSize>1GB</maxFileSize>-->
+    <!--            </timeBasedFileNamingAndTriggeringPolicy>-->
+    <!--            <maxHistory>${MAX_PERIOD_IN_DAYS}</maxHistory>-->
+    <!--        </rollingPolicy>-->
+    <!--    </appender>-->
+
+    <!--    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+    <!--        <file>${LOG_DIR}/error.log</file>-->
+    <!--        <filter class="ch.qos.logback.classic.filter.LevelFilter">-->
+    <!--            <level>error</level>-->
+    <!--            <onMatch>ACCEPT</onMatch>-->
+    <!--            <onMismatch>DENY</onMismatch>-->
+    <!--        </filter>-->
+    <!--        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">-->
+    <!--            <charset>UTF-8</charset>-->
+    <!--            <pattern>${LOG_PATTERN}</pattern>-->
+    <!--        </encoder>-->
+    <!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+    <!--            <fileNamePattern>${LOG_DIR}/error/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>-->
+    <!--            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">-->
+    <!--                <maxFileSize>1GB</maxFileSize>-->
+    <!--            </timeBasedFileNamingAndTriggeringPolicy>-->
+    <!--            <maxHistory>${MAX_PERIOD_IN_DAYS}</maxHistory>-->
+    <!--        </rollingPolicy>-->
+    <!--    </appender>-->
+
+    <!-- Global settings  -->
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+    <logger name="com.zaxxer.hikari.HikariConfig" level="DEBUG" additivity="false">
+        <appender-ref ref="HIKARI_CP"/>
+    </logger>
+    <logger name="com.zaxxer.hikari" level="DEBUG" additivity="false">
+        <appender-ref ref="HIKARI_CP"/>
+    </logger>
+    <logger name="org.apache.ibatis" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.springframework.boot.autoconfigure" level="ERROR" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="jdbc" level="OFF"/>
+    <logger name="jdbc.sqlonly" level="OFF"/>
+    <logger name="jdbc.sqltiming" level="DEBUG"/>
+    <logger name="jdbc.audit" level="OFF"/>
+    <logger name="jdbc.resultset" level="OFF"/>
+    <logger name="jdbc.resultsettable" level="DEBUG"/>
+    <logger name="jdbc.connection" level="OFF"/>
+    <logger name="ai.fassto.tms.externalservice.parcel.chainlogis.send.api" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="ai.fassto.tms.externalservice.parcel.cj.send.api" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="ai.fassto.tms.externalservice.parcel.hanjin.send.api" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="ai.fassto.tms.externalservice.parcel.lotte.send.api" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="ai.fassto.tms.externalservice.parcel.sweettracker.send.api" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="ai.fassto.tms.externalservice.parcel.teamfresh.send.api" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+
+</configuration>

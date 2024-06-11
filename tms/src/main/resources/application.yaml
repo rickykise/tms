@@ -1,0 +1,135 @@
+server:
+  shutdown: "graceful"
+  port: ${env.server.port}
+  forward-headers-strategy: framework   # 스웨거 호출을 위한 설정 없으면 CORS 애러 발생함.
+
+health-check:
+  message: ${env.server.profile}
+
+spring:
+  fassto:
+    datasource:
+      hikari:
+        jdbc-url: jdbc:${env.fassto.db.name}://${env.fassto.db.host}:${env.fassto.db.port}/fsswms?allowPublicKeyRetrieval=true&useSSL=false&autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&allowMultiQueries=true
+        username: ${env.fassto.db.username}
+        password: ${env.fassto.db.password}
+        driver-class-name: ${env.fassto.db.driver.class.name}
+        maximum-pool-size: ${env.fassto.db.pool.size}
+        validation-timeout: 5000
+        connection-timeout: 55000
+        connection-test-query: SELECT 1
+        max-lifetime: 60000
+  hanjin:
+    datasource:
+      hikari:
+        jdbc-url: jdbc:${env.hanjin.db.name}:@${env.hanjin.db.host}:${env.hanjin.db.port}:${env.hanjin.db.sid}
+        username: ${env.hanjin.db.username}
+        password: ${env.hanjin.db.password}
+        driver-class-name: ${env.hanjin.db.driver.class.name}
+        maximum-pool-size: ${env.hanjin.db.pool.size}
+        validation-timeout: 5000
+        connection-timeout: 30000
+        max-lifetime: 50000
+  cj:
+    datasource:
+      hikari:
+        jdbc-url: jdbc:${env.cj.db.name}:@${env.cj.db.host}:${env.cj.db.port}:${env.cj.db.sid}
+        username: ${env.cj.db.username}
+        password: ${env.cj.db.password}
+        driver-class-name: ${env.cj.db.driver.class.name}
+        maximum-pool-size: ${env.cj.db.pool.size}
+        validation-timeout: 5000
+        connection-timeout: 30000
+        max-lifetime: 50000
+  lotte:
+    datasource:
+      hikari:
+        jdbc-url: jdbc:${env.lotte.db.name}:@${env.lotte.db.host}:${env.lotte.db.port}:${env.lotte.db.sid}
+        username: ${env.lotte.db.username}
+        password: ${env.lotte.db.password}
+        driver-class-name: ${env.lotte.db.driver.class.name}
+        maximum-pool-size: ${env.lotte.db.pool.size}
+        validation-timeout: 5000
+        connection-timeout: 30000
+        max-lifetime: 50000
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 120000
+            readTimeout: 120000
+            loggerLevel: full
+            decode404: false
+          hanjin-parcel:
+            connectTimeout: 60000
+            readTimeout: 60000
+            loggerLevel: full
+            decode404: false
+          team-fresh-parcel:
+            connectTimeout: 60000
+            readTimeout: 60000
+            loggerLevel: full
+            decode404: false
+          sweet-tracker-parcel:
+            connectTimeout: 60000
+            readTimeout: 60000
+            loggerLevel: full
+            decode404: false
+          lotte-parcel:
+            connectTimeout: 60000
+            readTimeout: 60000
+            loggerLevel: full
+            decode404: false
+          cjAddr-parcel:
+            connectTimeout: 60000
+            readTimeout: 60000
+            loggerLevel: full
+            decode404: false
+          chain-logis-parcel:
+            connectTimeout: 60000
+            readTimeout: 60000
+            loggerLevel: full
+            decode404: false
+
+parcel:
+  team-fresh:
+    api-access-key: ${env.team-fresh.api-access-key}
+    url: ${env.team-fresh.url}
+  hanjin:
+    url: ${env.hanjin.url}
+    client-id: ${env.hanjin.client-id}
+    auth-key: ${env.hanjin.auth-key}
+    webhook:
+      url: ${env.hanjin.webhook.url}
+      username: '한진택배 알림봇'
+      title: ':alert: 한진택배 거래중지 발생 :alert:'
+      token: ${env.hanjin.webhook.token}
+  chain-logis:
+    url: ${env.chain-logis.url}
+    token: ${env.chain-logis.token}
+  lotte:
+    url: ${env.lotte.url}
+    address-token: ${env.lotte.address-token}
+  delivery-gateway:
+    url: ${env.delivery-gateway.url}
+  cjAddr:
+    url: ${env.cjAddr.url}
+
+management:
+  server:
+    port: ${env.server.port}
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      enabled: true
+      probes:
+        enabled: true
+  health:
+    livelinessState:
+      enabled: true
+    readinessState:
+      enabled: true

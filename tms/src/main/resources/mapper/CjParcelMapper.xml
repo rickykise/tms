@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ai.fassto.tms.dataaccess.parcel.cj.repository.mybatis.CjParcelMapper">
+    <!-- 송장 기등록 여부 확인 -->
+    <select id="isRegisteredInvoice"
+            parameterType="ai.fassto.tms.dataaccess.parcel.cj.dto.CustomerUseNoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.cj.dto.CheckRegisteredInvoiceDto">
+        /* LogisMapper.getRegisteredInvoiceCount */
+        SELECT COUNT(INVC_NO) CNT
+        FROM V_RCPT_FSS010
+        WHERE CUST_USE_NO = #{customerUseNo}
+          AND RCPT_DV = '01' -- (01:일반 02:반품)
+    </select>
+
+    <!-- 배송 의뢰 등록 -->
+    <insert id="saveInvoice" parameterType="ai.fassto.tms.dataaccess.parcel.cj.dto.CjRegisterParcelDto">
+        /* LogisMapper.saveInvoice */
+        INSERT INTO V_RCPT_FSS010( CUST_ID -- 거래처코드 (6자리)
+                                 , CUST_USE_NO -- 고객사용번호
+                                 , INVC_NO -- 운송장번호
+                                 , RCPT_DV -- 접수구분 (01:일반, 02:반품)
+                                 , RCPT_YMD -- 접수일자
+                                 , COLCT_EXPCT_YMD -- 집화예정일
+                                 , FRT_DV_CD -- 운임구분코드 (01:선불, 02:착불, 03:신용)
+                                 , BOX_TYPE_CD -- 박스타입코드 (01:극소, 02:소, 03:중, 04:대, 05:특대)
+                                 , BOX_QTY -- 박스수량
+                                 , ORI_ORD_NO -- 원주문번호
+                                 , GDS_NM -- 상품명
+                                 , GDS_QTY -- 상품수량
+                                 , SENDR_NM -- 송화인명
+                                 , SENDR_TEL_NO1 -- 송화인 전화번호1
+                                 , SENDR_TEL_NO2 -- 송화인 전화번호2
+                                 , SENDR_TEL_NO3 -- 송화인 전화번호3
+                                 , SENDR_CELL_NO1 -- 송화인 전화번호기타1
+                                 , SENDR_CELL_NO2 -- 송화인 전화번호기타2
+                                 , SENDR_CELL_NO3 -- 송화인 전화번호기타3
+                                 , SENDR_ZIP_NO -- 송화인우편번호
+                                 , SENDR_ADDR -- 송화인주소
+                                 , SENDR_DETAIL_ADDR -- 송화인상세주소
+                                 , RCVR_NM -- 수화인명
+                                 , RCVR_TEL_NO1 -- 수화인 전화번호1
+                                 , RCVR_TEL_NO2 -- 수화인 전화번호2
+                                 , RCVR_TEL_NO3 -- 수화인 전화번호3
+                                 , RCVR_CELL_NO1 -- 수화인 전화번호기타1
+                                 , RCVR_CELL_NO2 -- 수화인 전화번호기타2
+                                 , RCVR_CELL_NO3 -- 수화인 전화번호기타3
+                                 , RCVR_ZIP_NO -- 수화인우편번호
+                                 , RCVR_ADDR -- 수화인주소
+                                 , RCVR_DETAIL_ADDR -- 수화인상세주소
+                                 , REMARK_1 -- 배송 메시지1 (비고)
+                                 , CUST_MGMT_DLCM_CD -- 고객관리거래처코드 (주관사 관리 협력업체 코드 혹은 택배사 관리 업체코드)
+                                 , MPCK_KEY -- 합포장키 (합포장이 없는 경우: YYYYMMDD_고객ID_고객사용번호)
+                                 , MPCK_SEQ -- 합포장순번 (합포장 없는 경우: 1)
+                                 , REQ_DV_CD -- 요청구분코드 (01:요청, 02:취소)
+                                 , WORK_DV_CD -- 작업구분코드 (01:일반, 02:반품, 03:A/S)
+                                 , CAL_DV_CD -- 정산구분코드 (01:계약운임, 02:자료운임)
+                                 , CNTR_ITEM_CD -- 계약품목코드 (01:일반 품목)
+                                 , PRT_ST -- 송장출력상태 (01: 미출력, 02: 선출력, 03: 선발번(반품은 선발번이 없음))
+                                 , DLV_DV -- 택배구분 ('01': 택배, '02': 중량물(비설치물류))
+                                 , RCPT_ERR_YN -- 접수에러여부 (DEFAULT 'N')
+                                 , EAI_PRGS_ST -- EAI 전송상태 (DEFAULT '01')
+                                 , REG_EMP_ID -- 등록사원ID
+                                 , REG_DTIME -- 등록일시
+                                 , MODI_EMP_ID -- 수정사원ID
+                                 , MODI_DTIME -- 수정일시
+        )
+        VALUES ( #{contractCode} -- 거래처코드 (6자리)
+               , #{customerUseNo} -- 고객사용번호
+               , #{invoiceNo} -- 운송장번호
+               , #{receiptType} -- 접수구분 (01:일반, 02:반품)
+               , #{receiptDate} -- 접수일자
+               , #{pickDate} -- 집화예정일
+               , #{freightType} -- 운임구분코드 (01:선불, 02:착불, 03:신용)
+               , #{boxType} -- 박스타입코드 (01:극소, 02:소, 03:중, 04:대, 05:특대)
+               , #{boxQty} -- 박스수량
+               , #{orderNo} -- 원주문번호
+               , #{displayProductName} -- 상품명
+               , #{productQty} -- 상품수
+               , #{senderName} -- 송화인명
+               , #{senderNumber1} -- 송화인 전화번호1
+               , #{senderNumber2} -- 송화인 전화번호2
+               , #{senderNumber3} -- 송화인 전화번호3
+               , #{senderEtcNumber1} -- 송화인 전화번호기타1
+               , #{senderEtcNumber2} -- 송화인 전화번호기타2
+               , #{senderEtcNumber3} -- 송화인 전화번호기타3
+               , #{senderZipCode} -- 송화인우편번호
+               , #{senderAddress} -- 송화인주소
+               , #{senderAddressDetail} -- 송화인상세주소
+               , #{receiverName} -- 수화인명
+               , #{receiverNumber1} -- 수화인 전화번호1
+               , #{receiverNumber2} -- 수화인 전화번호2
+               , #{receiverNumber3} -- 수화인 전화번호3
+               , #{receiverEtcNumber1} -- 수화인 전화번호기타1
+               , #{receiverEtcNumber2} -- 수화인 전화번호기타2
+               , #{receiverEtcNumber3} -- 수화인 전화번호기타3
+               , #{receiverZipCode} -- 수화인우편번호
+               , #{receiverAddress} -- 수화인주소
+               , #{receiverAddressDetail} -- 수화인상세주소
+               , #{shipRequestMemo} -- 배송 메시지1 (비고)
+               , #{customerUseNo} -- 고객관리거래처코드 (주관사 관리 협력업체 코드 혹은 택배사 관리 업체코드)
+               , TO_CHAR(SYSDATE, 'YYYYMMDD') || '_' || #{contractCode} || '_' ||
+                 #{customerUseNo} -- 합포장키 (합포장이 없는 경우: YYYYMMDD_고객ID_고객사용번호)
+               , '1' -- 합포장순번 (합포장 없는 경우: 1)
+               , '01' -- 요청구분코드 (01:요청, 02:취소)
+               , '01' -- 작업구분코드 (01:일반, 02:반품, 03:A/S)
+               , '01' -- 정산구분코드 (01:계약운임, 02:자료운임)
+               , '01' -- 계약품목코드 (01:일반 품목)
+               , '01' -- 송장출력상태 (01: 미출력, 02: 선출력, 03: 선발번(반품은 선발번이 없음))
+               , '01' -- 택배구분 ('01': 택배, '02': 중량물(비설치물류))
+               , 'N' -- 접수에러여부 (DEFAULT 'N')
+               , '01' -- EAI 전송상태 (DEFAULT '01')
+               , 'FSS' -- 등록사원ID
+               , SYSDATE -- 등록일시
+               , 'FSS' -- 수정사원ID
+               , SYSDATE -- 수정일시
+               )
+    </insert>
+</mapper>

@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ai.fassto.tms.dataaccess.parcel.fassto.repository.mybatis.FasstoParcelMapper">
+
+    <!-- 배송불가지역 체크 -->
+    <select id="isDeliveryUnavailable" parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.DeliveryUnavailableDto"
+            resultType="boolean">
+        /* PID : FasstoParcelMapper.isDeliveryUnavailable */
+        SELECT IF(COUNT(*) > 0, 1, 0)
+        FROM tb_block_logi_addr_dtl
+        WHERE BLOCK_ZIP_NO = #{zipCode}
+          AND WH_CD = #{warehouseCode}
+          AND PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND USE_YN = 'Y'
+          AND END_DT >= date_format(NOW(), '%Y-%m-%d %H:%i:%s')
+          AND START_DT <![CDATA[<=]]> date_format(NOW(), '%Y-%m-%d %H:%i:%s')
+    </select>
+
+    <!-- 전략 단가 송장번호 추출 -->
+    <select id="selectCustomInvoiceNo" parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectInvoiceInfoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.InvoiceInfoDto">
+        /* PID : FasstoParcelMapper.selectCustomInvoiceNo */
+        SELECT CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1) as nextInvoiceNo
+             , CASE
+                   WHEN (#{parcelCompanyType.fmsCode} = 'LOTTE' || #{parcelCompanyType.fmsCode} = 'HANJIN')
+                       THEN CONCAT(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1),
+                                   MOD(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), 7))
+                   ELSE CONCAT(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), CONCAT(MOD(
+                           SUBSTR(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), 3, 9), 7)))
+            END                                                                   AS INVOICE_NO
+             , CUST_ID
+             , END_INVOICE_NO
+             , STR_INVOICE_NO
+        FROM TB_PARCEL_INVOICE
+        WHERE PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND TARGET_CST_CD LIKE CONCAT('%', #{customerCode}, '%')
+            for
+        update
+    </select>
+
+    <!-- 일반 단가 송장번호 추출 -->
+    <select id="selectInvoiceNo" parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectInvoiceInfoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.InvoiceInfoDto">
+        /* PID : FasstoParcelMapper.selectInvoiceNo */
+        SELECT PI.NOW_INVOICE_NO as nextInvoiceNo
+             , CASE
+                   WHEN (#{parcelCompanyType.fmsCode} = 'LOTTE' || #{parcelCompanyType.fmsCode} = 'HANJIN')
+                       THEN CONCAT(PI.NOW_INVOICE_NO, MOD(PI.NOW_INVOICE_NO, 7))
+                   ELSE CONCAT(PI.NOW_INVOICE_NO, CONCAT(MOD(SUBSTR(PI.NOW_INVOICE_NO, 3, 9), 7)))
+            END                  AS INVOICE_NO
+             , PI.CUST_ID
+             , PI.END_INVOICE_NO
+             , PI.STR_INVOICE_NO
+        FROM TB_WH_PARCEL WP
+                 INNER JOIN (SELECT CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1) AS NOW_INVOICE_NO
+                                  , END_INVOICE_NO
+                                  , STR_INVOICE_NO
+                                  , PARCEL_CD
+                                  , CUST_ID
+                             FROM TB_PARCEL_INVOICE) PI
+                            ON PI.PARCEL_CD = WP.PARCEL_CD
+                                AND PI.CUST_ID = WP.CUST_ID
+        WHERE WP.PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND WP.WH_CD = #{warehouseCode}
+            for
+        update
+    </select>
+
+    <!-- N도착 보장 일반 단가 송장번호 추출 -->
+    <select id="selectHanjinGuaranteeInvoiceNo"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectInvoiceInfoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.InvoiceInfoDto">
+        /* PID : FasstoParcelMapper.selectHanjinGuaranteeInvoiceNo */
+        SELECT CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1) as nextInvoiceNo
+             , CASE
+                   WHEN (#{parcelCompanyType.fmsCode} = 'LOTTE' || #{parcelCompanyType.fmsCode} = 'HANJIN')
+                       THEN CONCAT(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1),
+                                   MOD(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), 7))
+                   ELSE CONCAT(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), CONCAT(MOD(
+                           SUBSTR(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), 3, 9), 7)))
+            END                                                                   AS INVOICE_NO
+             , CUST_ID
+             , END_INVOICE_NO
+             , STR_INVOICE_NO
+        FROM tb_wh_parcel_service_invoice
+        WHERE WH_CD = #{warehouseCode}
+          AND PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND SERVICE_TYPE = 'NG'
+            for
+        update
+    </select>
+
+    <!-- N도착 보장 전략 단가 송장번호 추출 -->
+    <select id="selectHanjinGuaranteeCustomInvoiceNo"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectInvoiceInfoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.InvoiceInfoDto">
+        /* PID : FasstoParcelMapper.selectHanjinGuaranteeCustomInvoiceNo */
+        SELECT CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1) as nextInvoiceNo
+             , CASE
+                   WHEN (#{parcelCompanyType.fmsCode} = 'LOTTE' || #{parcelCompanyType.fmsCode} = 'HANJIN')
+                       THEN CONCAT(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1),
+                                   MOD(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), 7))
+                   ELSE CONCAT(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), CONCAT(MOD(
+                           SUBSTR(CONCAT(IFNULL(NULLIF(NOW_INVOICE_NO, ''), STR_INVOICE_NO - 1) + 1), 3, 9), 7)))
+            END                                                                   AS INVOICE_NO
+             , CUST_ID
+             , END_INVOICE_NO
+             , STR_INVOICE_NO
+        FROM tb_wh_parcel_service_invoice
+        WHERE WH_CD = #{warehouseCode}
+          AND PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND TARGET_CST_CD LIKE CONCAT('%', #{customerCode}, '%')
+          AND SERVICE_TYPE = 'NV'
+            for
+        update
+    </select>
+
+    <!-- 일반+전략 단가 현재 송장번호 update -->
+    <update id="updateInvoiceNo" parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.UpdateInvoiceInfoDto">
+        /* PID : FasstoParcelMapper.updateNowInvoice */
+        UPDATE
+            TB_PARCEL_INVOICE
+        SET NOW_INVOICE_NO = #{nextInvoiceNo}
+          , UPD_ID         = 'TMS'
+          , UPD_TIME       = NOW()
+        WHERE PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND CUST_ID = #{custId}
+    </update>
+
+    <!-- N도착 일반+전략 단가 현재 송장번호 update -->
+    <update id="updateHanjinGuaranteeInvoiceNo"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.UpdateInvoiceInfoDto">
+        /* PID : FasstoParcelMapper.updateHanjinGuaranteeInvoiceNo */
+        UPDATE
+            tb_wh_parcel_service_invoice
+        SET NOW_INVOICE_NO = #{nextInvoiceNo}
+          , UPD_ID         = 'TMS'
+          , UPD_TIME       = NOW()
+        WHERE PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND CUST_ID = #{custId}
+    </update>
+
+    <!--커스텀 신용코드/대역대 사용 고객사(전략단가) 용 쿼리-->
+    <select id="getCustomCenterContractCode"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectCenterContractCodeDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.ContractCodeDto">
+        /* PID : FasstoParcelMapper.getCustomCenterContractCode */
+        SELECT CUST_ID AS contractCode
+        FROM TB_PARCEL_INVOICE
+        WHERE PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND TARGET_CST_CD LIKE CONCAT('%', #{customerCode}, '%')
+    </select>
+
+    <!--일반 신용코드/대역대 사용 고객사(일반단가) 용 쿼리-->
+    <select id="getCenterContractCode"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectCenterContractCodeDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.ContractCodeDto">
+        /* PID : FasstoParcelMapper.getCenterContractCode */
+        SELECT IF(PARCEL_CD = 'HANJIN', CREDIT_NUM, CUST_ID) as contractCode
+        FROM TB_WH_PARCEL
+        WHERE WH_CD = #{whCd}
+          AND PARCEL_CD = #{parcelCompanyType.fmsCode}
+    </select>
+
+    <!--한진 도착보장 신용코드/대역대 사용 고객사(일반단가) 용 쿼리-->
+    <select id="getHanjinGuaranteeCenterContractCode"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectCenterContractCodeDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.ContractCodeDto">
+        /* PID : FasstoParcelMapper.getHanjinGuaranteeCenterContractCode */
+        SELECT CUST_ID AS contractCode
+        FROM tb_wh_parcel_service_invoice
+        WHERE WH_CD = #{whCd}
+          AND PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND SERVICE_TYPE = 'NG'
+    </select>
+
+    <!--한진 도착보장 신용코드/대역대 사용 고객사(전략단가) 용 쿼리-->
+    <select id="getHanjinGuaranteeCustomCenterContractCode"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectCenterContractCodeDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.ContractCodeDto">
+        /* PID : FasstoParcelMapper.getHanjinGuaranteeCustomCenterContractCode */
+        SELECT CUST_ID AS contractCode
+        FROM tb_wh_parcel_service_invoice
+        WHERE WH_CD = #{whCd}
+          AND PARCEL_CD = #{parcelCompanyType.fmsCode}
+          AND TARGET_CST_CD LIKE CONCAT('%', #{customerCode}, '%')
+          AND SERVICE_TYPE = 'NV'
+    </select>
+
+    <update id="updateTeamFreshOrder"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.UpdateTeamFreshOrderDto">
+        /* PID : ParcelMapper.updateTeamFreshOrder */
+        UPDATE tb_teamfresh_ord
+        SET TEAMFRESH_ORD_NO = #{teamFreshOrdNo}
+          , TEAMFRESH_ORD_DT = #{teamFreshOrdDt}
+          , AREA_CD          = #{areaCode}
+          , ORD_RES_TP       = 'Y'
+        WHERE OUT_ORD_SLIP_NO = #{slipNo}
+          AND ORD_RES_TP != 'Y'
+    </update>
+
+    <select id="selectItemsInfo"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectItemDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.ItemInfoDto">
+        /* PID : FasstoParcelMapper.selectItemsInfo */
+        SELECT IF(INV_GOD_NM_USE_YN = 'Y', trim(INV_GOD_NM), TRIM_GOD_NM) as trimGodNm
+        FROM TB_GOD
+        WHERE GOD_CD = #{code}
+    </select>
+
+    <select id="selectSenderInfo"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectSenderInfoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SenderInfoDto">
+        /* PID : FasstoParcelMapper.selectSenderInfo */
+        SELECT FN_COM_GET_DECRYPT(SEND_NM), FN_COM_GET_DECRYPT(SEND_TEL_NO)
+          FROM TB_OUT_ORD_SHT OOS, (SELECT ORD_SEQ
+                                      FROM TB_OUT_ORD
+                                     WHERE WH_CD = #{warehouseCode}
+                                       AND SLIP_NO = #{slipNo}
+                                       AND ORD_NO = #{orderNo}
+                                     LIMIT 1) OO
+        WHERE OOS.WH_CD = #{warehouseCode}
+          AND OOS.CST_CD = #{customerCode}
+          AND OOS.ORD_NO = #{orderNo}
+          AND OOS.ORD_SEQ = OO.ORD_SEQ
+    </select>
+
+    <select id="isIntegratedInvoice" resultType="boolean">
+        /*FasstoParcelMapper.isIntegratedInvoice*/
+        SELECT COUNT(MAIN_CD)
+        FROM tb_com_dtl
+        WHERE MAIN_CD = 'FWH01'
+          AND SUB_CD = #{warehouseCode}
+    </select>
+
+    <select id="selectTeamFreshOrdInfo" resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.TeamFreshOrderInfoDto">
+        /* PID : FasstoParcelMapper.selectTeamFreshOrdInfo */
+        SELECT TEAMFRESH_ORD_NO
+             , AREA_CD
+        FROM tb_teamfresh_ord
+        WHERE OUT_ORD_SLIP_NO = #{outOrdSlipNo}
+        LIMIT 1
+    </select>
+
+    <select id="selectWareHouseNameBy" resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.WarehouseNameDto">
+        /* PID : FasstoParcelMapper.selectWareHouseNameBy */
+        SELECT WH_NM
+        FROM tb_wh
+        WHERE WH_CD = #{warehouseCode}
+    </select>
+
+    <insert id="insertHanjinInvoice" parameterType="java.util.List">
+        /*FasstoParcelMapper.insertHanjinInvoice*/
+        INSERT INTO tb_invoice_print_hanjin
+        ( INVC_NO
+        , RCPT_TIME
+        , BOX_TYP
+        , BOX_QTY
+        , SENDR_NM
+        , SENDR_TEL_NO1
+        , SENDR_TEL_NO2
+        , SENDR_TEL_NO3
+        , SENDR_ADDR
+        , SENDR_DETAIL_ADDR
+        , RCVR_NM
+        , RCVR_TEL_NO1
+        , RCVR_TEL_NO2
+        , RCVR_TEL_NO3
+        , RCVR_TEL_ETC_NO1
+        , RCVR_TEL_ETC_NO2
+        , RCVR_TEL_ETC_NO3
+        , RCVR_ADDR
+        , RCVR_DETAIL_ADDR
+        , MARK_GDS_NM
+        , GDS_NM
+        , GDS_QTY
+        , HUB_COD
+        , RCV_TML_COD
+        , RCV_TML_NAM
+        , DOM_MID
+        , CEN_COD
+        , DOM_PDZ
+        , CEN_NAM
+        , ES_NAM
+        , SEND_TML_COD
+        , SEND_TML_NAM
+        , PDZ_NAM
+        , PAY_CON
+        , DOM_RGN
+        , CUSTOMER_MEMO
+        , REG_ID
+        , REG_TIME
+        , UPD_ID
+        , UPD_TIME)
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            ( #{item.invcNo}
+            , NOW()
+            , #{item.boxTyp}
+            , #{item.boxQty}
+            , FN_COM_GET_ENCRYPT(#{item.customerName})
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo1})
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo2})
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo3})
+            , FN_COM_GET_ENCRYPT(#{item.sendrAddr})
+            , FN_COM_GET_ENCRYPT(#{item.sendrDetailAddr})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrNm})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo1})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo2})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo3})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo1})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo2})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo3})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrAddr})
+            , FN_COM_GET_ENCRYPT(REPLACE(#{item.rcvrDetailAddr}, '@#$', ' '))
+            , #{item.markGdsNm}
+            , #{item.gdsNm}
+            , #{item.gdsQty}
+            , #{item.hubCod}
+            , #{item.rcvTmlCod}
+            , #{item.rcvTmlNam}
+            , #{item.domMid}
+            , #{item.cenCod}
+            , #{item.domPdz}
+            , #{item.cenNam}
+            , #{item.esNam}
+            , #{item.sendTmlCod}
+            , #{item.sendTmlNam}
+            , #{item.pdzNam}
+            , #{item.payCon}
+            , #{item.domRgn}
+            , #{item.customerMemo}
+            , 'TMS'
+            , NOW()
+            , 'TMS'
+            , NOW())
+        </foreach>
+    </insert>
+
+
+    <select id="selectEcremmoceParcelData"
+            parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectEcremmoceParcelDataDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.EcremmoceParcelDataDto">
+        /*FasstoParcelMapper.selectEcremmoceLogisticsData*/
+        SELECT PLATFORM
+             , LOGI_CENTER
+        FROM tb_out_ord_sht
+        WHERE WH_CD = #{warehouseCode}
+          AND CST_CD = #{customerCode}
+          AND ORD_NO = #{orderNo}
+        ORDER BY ORD_SEQ DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insertEcremmoceInvoiceData"
+            parameterType="java.util.List">
+        /*FasstoParcelMapper.insertEcremmoceInvoice*/
+        INSERT INTO TB_INVOICE_PRINT_ECREMMOCE
+        ( INVC_NO
+        , ORD_NO
+        , RCPT_YMD
+        , FRT_DV_CD
+        , BOX_TYPE_CD
+        , BOX_QTY
+        , SENDR_NM
+        , SENDR_TEL_NO
+        , RCVR_NM
+        , RCVR_TEL_NO
+        , RCVR_ADDR
+        , MARK_GDS_NM
+        , GDS_NM
+        , GDS_QTY
+        , REG_ID
+        , REG_TIME
+        , UPD_ID
+        , UPD_TIME
+        , PLATFORM
+        , LOGI_CENTER)
+        VALUES ( #{invcNo}
+               , #{ordNo}
+               , #{rcptYmd}
+               , #{frtDvCd}
+               , #{boxTypeCd}
+               , #{boxQty}
+               , FN_COM_GET_ENCRYPT(#{sendrNm})
+               , FN_COM_GET_ENCRYPT(#{sendrTelNo})
+               , FN_COM_GET_ENCRYPT(#{rcvrNm})
+               , FN_COM_GET_ENCRYPT(#{rcvrTelNo})
+               , FN_COM_GET_ENCRYPT(#{rcvrAddr})
+               , #{markGdsNm}
+               , #{gdsNm}
+               , #{gdsQty}
+               , 'TMS'
+               , NOW()
+               , 'TMS'
+               , NOW()
+               , #{platform}
+               , #{logiCenter})
+        ON DUPLICATE KEY
+            UPDATE BOX_QTY  = BOX_QTY + #{boxQty}
+                 , GDS_QTY  = GDS_QTY + #{gdsQty}
+                 , UPD_ID   = 'TMS'
+                 , UPD_TIME = now()
+    </insert>
+
+    <insert id="insertChainLogisInvoice"
+            parameterType="java.util.List">
+        /*FasstoParcelMapper.insertChainLogisInvoice*/
+        INSERT INTO tb_invoice_print_chainlogis
+        ( invc_no
+        , rcpt_time
+        , box_type_cd
+        , box_qty
+        , sendr_nm
+        , sendr_tel_no1
+        , sendr_tel_no2
+        , sendr_tel_no3
+        , sendr_addr
+        , sendr_detail_addr
+        , rcvr_nm
+        , rcvr_tel_no1
+        , rcvr_tel_no2
+        , rcvr_tel_no3
+        , RCVR_TEL_ETC_NO1
+        , RCVR_TEL_ETC_NO2
+        , RCVR_TEL_ETC_NO3
+        , rcvr_addr
+        , rcvr_detail_addr
+        , mark_gds_nm
+        , gds_nm
+        , gds_qty
+        , dong_group
+        , customer_memo
+        , reg_id
+        , reg_time
+        , upd_id
+        , upd_time)
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            ( #{item.invoiceNo}
+            , now()
+            , '01'
+            , #{item.boxQty}
+            , fn_com_get_encrypt(#{item.sendrNm})
+            , fn_com_get_encrypt(#{item.sendrTelNo1})
+            , fn_com_get_encrypt(#{item.sendrTelNo2})
+            , fn_com_get_encrypt(#{item.sendrTelNo3})
+            , fn_com_get_encrypt(#{item.sendrAddr})
+            , fn_com_get_encrypt(#{item.sendrDetailAddr})
+            , fn_com_get_encrypt(#{item.rcvrNm})
+            , fn_com_get_encrypt(#{item.rcvrTelNo1})
+            , fn_com_get_encrypt(#{item.rcvrTelNo2})
+            , fn_com_get_encrypt(#{item.rcvrTelNo3})
+            , fn_com_get_encrypt(#{item.rcvrTelEtcNo1})
+            , fn_com_get_encrypt(#{item.rcvrTelEtcNo2})
+            , fn_com_get_encrypt(#{item.rcvrTelEtcNo3})
+            , fn_com_get_encrypt(#{item.rcvrAddr})
+            , fn_com_get_encrypt(REPLACE(#{item.rcvrDetailAddr}, '@#$', ' '))
+            , #{item.markGdsNm}
+            , #{item.gdsNm}
+            , #{item.gdsQty}
+            , #{item.dongGroup}
+            , #{item.customerMemo}
+            , 'TMS'
+            , now()
+            , 'TMS'
+            , now())
+        </foreach>
+    </insert>
+
+    <insert id="insertLotteInvoice" parameterType="java.util.List">
+        /*FasstoParcelMapper.insertLotteInvoice*/
+        INSERT INTO TB_INVOICE_PRINT_LOTTE
+        ( INVC_NO -- 운송장번호
+        , SEND_YMD -- 접수일자
+        , CON_FLG -- 운임구분(001:신용, 003:착불)
+        , BOX_TYPE_CD -- 박스크기(1:소, 2:중, 3:대)
+        , BOX_QTY -- 박스수량
+        , SENDR_NM -- 송화인명
+        , SENDR_TEL_NO1 -- 송화인전화번호1
+        , SENDR_TEL_NO2 -- 송화인전화번호2
+        , SENDR_TEL_NO3 -- 송화인전화번호3
+        , SENDR_ADDR -- 송화인주소
+        , RCVR_NM -- 수화인명
+        , RCVR_TEL_NO1 -- 수화인전화번호1
+        , RCVR_TEL_NO2 -- 수화인전화번호2
+        , RCVR_TEL_NO3 -- 수화인전화번호3
+        , RCVR_TEL_ETC_NO1 -- 수화인전화번호 기타1
+        , RCVR_TEL_ETC_NO2 -- 수화인전화번호 기타2
+        , RCVR_TEL_ETC_NO3 -- 수화인전화번호 기타3
+        , RCVR_ADDR -- 수화인주소
+        , MARK_GDS_NM -- 표시상품
+        , GDS_NM -- 상품명
+        , GDS_QTY -- 상품수량
+        , SUM_FARE -- 운임
+        , TML_CD -- 터미널코드
+        , TML_NM -- 터미널명
+        , CITY_GUN_GU -- 시군구
+        , EUP_MUIN_DONG -- 읍면동
+        , FILT_CD -- 도착지코드
+        , BRNCLCT_CD -- 집하점코드
+        , BRNCLCT_NM -- 집하점명
+        , BRNCLCT_TEL_NO -- 집하점전화번호
+        , BRNSHP_NM -- 배달영업소
+        , DLV_MSG -- 배송메시지
+        , REG_ID -- 등록자
+        , REG_TIME -- 등록시간
+        , UPD_ID -- 수정자
+        , UPD_TIME -- 수정시간
+        , EMP_NM -- 집배송사원명
+        )
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            ( #{item.invcNo} -- 운송장번호
+            , DATE_FORMAT(NOW(), '%Y%m%d') -- 접수일자
+            , #{item.conFlg} -- 운임구분(001:신용, 003:착불)
+            , '1' -- 박스크기(1:소, 2:중, 3:대)
+            , '1' -- 박스수량
+            , FN_COM_GET_ENCRYPT(#{item.sendrNm}) -- 송화인명
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo1}) -- 송화인전화번호1
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo2}) -- 송화인전화번호2
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo3}) -- 송화인전화번호3
+            , FN_COM_GET_ENCRYPT(#{item.sendrAddr}) -- 송화인주소
+            , FN_COM_GET_ENCRYPT(#{item.rcvrNm}) -- 수화인명
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo1}) -- 수화인전화번호1
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo2}) -- 수화인전화번호2
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo3}) -- 수화인전화번호3
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo1}) -- 수화인전화번호 기타1
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo2}) -- 수화인전화번호 기타2
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo3}) -- 수화인전화번호 기타3
+            , FN_COM_GET_ENCRYPT(#{item.rcvrAddr}) -- 수화인주소
+            , #{item.markGdsNm} -- 표시상품
+            , #{item.gdsNm} -- 상품명
+            , #{item.gdsQty} -- 상품수량
+            , #{item.sumFare} -- 운임
+            , #{item.tmlCd} -- 터미널코드
+            , #{item.tmlNm} -- 터미널명
+            , #{item.cityGunGu} -- 시군구
+            , #{item.eupMuinDong} -- 읍면동
+            , #{item.filtCd} -- 도착지코드
+            , #{item.brnclctCd} -- 집하점코드
+            , #{item.brnclctNm} -- 집하점명
+            , #{item.brnclctTelNo} -- 집하점전화번호
+            , #{item.brnshpNm} -- 배달영업소
+            , #{item.dlvMsg} -- 배송메시지
+            , 'TMS'
+            , NOW()
+            , 'TMS'
+            , NOW()
+            , FN_COM_GET_ENCRYPT(#{item.empNm}) -- 집배송사원명
+            )
+        </foreach>
+    </insert>
+
+    <insert id="insertCjInvoice" parameterType="java.util.List">
+        /*FasstoParcelMapper.insertCjInvoice*/
+        INSERT INTO tb_invoice_print
+        ( INVC_NO
+        , RCPT_YMD
+        , FRT_DV_CD
+        , BOX_TYPE_CD
+        , BOX_QTY
+        , SENDR_NM
+        , SENDR_TEL_NO1
+        , SENDR_TEL_NO2
+        , SENDR_TEL_NO3
+        , SENDR_ADDR
+        , SENDR_DETAIL_ADDR
+        , RCVR_NM
+        , RCVR_TEL_NO1
+        , RCVR_TEL_NO2
+        , RCVR_TEL_NO3
+        , RCVR_TEL_ETC_NO1
+        , RCVR_TEL_ETC_NO2
+        , RCVR_TEL_ETC_NO3
+        , RCVR_ADDR
+        , RCVR_DETAIL_ADDR
+        , MARK_GDS_NM
+        , GDS_NM
+        , GDS_QTY
+        , END_NO
+        , SUB_END_NO
+        , MAN_BRAN_NM
+        , CLDV_EMP_NM
+        , CLDV_EMP_CLS_CD
+        , SHORT_ADDR
+        , REG_ID
+        , REG_TIME
+        , UPD_ID
+        , UPD_TIME)
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            ( #{item.invcNo}
+            , DATE_FORMAT(NOW(), '%Y%m%d')
+            , #{item.frtDvCd}
+            , #{item.boxTypeCd}
+            , #{item.boxQty}
+            , FN_COM_GET_ENCRYPT(#{item.sendrNm})
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo1})
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo2})
+            , FN_COM_GET_ENCRYPT(#{item.sendrTelNo3})
+            , FN_COM_GET_ENCRYPT(#{item.sendrAddr})
+            , FN_COM_GET_ENCRYPT(#{item.sendrDetailAddr})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrNm})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo1})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo2})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelNo3})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo1})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo2})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrTelEtcNo3})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrAddr})
+            , FN_COM_GET_ENCRYPT(#{item.rcvrDetailAddr})
+            , #{item.markGdsNm}
+            , #{item.gdsNm}
+            , #{item.gdsQty}
+            , #{item.endNo}
+            , #{item.subEndNo}
+            , #{item.manBranNm}
+            , #{item.cldvEmpNm}
+            , #{item.cldvEmpClsCd}
+            , FN_COM_GET_ENCRYPT(#{item.shortAddr})
+            , 'TMS'
+            , NOW()
+            , 'TMS'
+            , NOW())
+        </foreach>
+    </insert>
+
+    <select id="selectBrnclctInfo" parameterType="ai.fassto.tms.dataaccess.parcel.fassto.dto.SelectLotteBrnclctDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.fassto.dto.LotteBrnclctDto">
+        SELECT BRNCLCT_CD
+             , BRNCLCT_NM
+             , BRNCLCT_TEL_NO
+        FROM TB_WH_PARCEL
+        WHERE PARCEL_CD = #{deliveryCompanyCode}
+          AND WH_CD = #{warehouseCode}
+    </select>
+</mapper>

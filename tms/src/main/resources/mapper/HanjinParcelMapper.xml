@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ai.fassto.tms.dataaccess.parcel.hanjin.repository.mybatis.HanjinParcelMapper">
+    <!-- 송장 기등록 여부 확인 -->
+    <select id="isRegisteredInvoice" parameterType="ai.fassto.tms.dataaccess.parcel.hanjin.dto.CustomerUseNoDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.hanjin.dto.CheckRegisteredInvoiceDto">
+        /* ParcelHanjinMapper.getRegisteredInvoiceCount */
+        SELECT COUNT(COM_ORD_NUM) AS CNT
+        FROM CST_ORD_MTR_VW
+        WHERE COM_ORD_NUM = #{customerUseNo}
+          AND COM_DLV_DIV = 'S'
+    </select>
+
+    <!-- 송장 번호 조회 -->
+    <select id="findInvoiceNo" parameterType="String" resultType="boolean">
+        /* ParcelHanjinMapper.findInvoiceNo */
+        SELECT COM_WBL_NUM AS originInvoiceNo
+        FROM CST_ORD_MTR_VW
+        WHERE COM_ORD_NUM = #{customerUseNo}
+          AND COM_DLV_DIV = 'S'
+    </select>
+
+    <select id="registerParcel" statementType="CALLABLE"
+            parameterType="ai.fassto.tms.dataaccess.parcel.hanjin.dto.RegisterParcelDto">
+        /* PID : ParcelHanjinMapper.registerParcel */
+        {CALL insert_cst_ord_mtr_mm
+            (
+                'FASSTO' -- EDI코드(DB접속계정)
+            , #{customerUseNo} -- 고객사용번호
+            , #{invoiceNo} -- 운송장번호
+            , #{shippingType} -- 배송구분
+            , #{contractCode} -- 신용번호
+            , #{collectionDate} -- 상품출고일(집하요청일자)
+            , #{senderZipCode} -- 송하인 우편번호
+            , #{senderAddress} -- 송하인 주소1(동이상 주소)
+            , #{senderAddressDetail} -- 송하인 주소2(동이하 주소)
+            , #{senderName} -- 송하인명
+            , #{senderPhone} -- 송하인 전화번호
+            , #{senderCellPhone} -- 송하인 핸드폰번호
+            , #{senderName} -- 송하인 담당자명
+            , #{receiverZipCode} -- 수하인 우편번호
+            , #{receiverAddress} -- 수하인 주소1(동이상 주소)
+            , #{receiverAddressDetail} -- 수하인 주소2(동이하 주소)
+            , #{receiverName} -- 수하인명
+            , #{receiverPhone} -- 수하인 전화번호
+            , #{receiverCellPhone} -- 수하인 핸드폰번호
+            , #{receiverName} -- 수하인 담당자명
+            , #{shipRequestMemo} -- 배송메세지
+            , #{displayProductName} -- 상품명
+            , #{boxQty} -- 박스수량
+            , #{paymentType} -- 지불조건
+            , #{boxType} -- 박스타입
+            , #{hanjinInputValue} -- 메모1
+            , null -- 메모2
+            , null -- 메모3
+            , null -- 메모4
+            , #{isResult,    mode=OUT, 	  jdbcType=VARCHAR} -- 성공여부 Y/N
+            , #{errorCode,      mode=OUT, 	  jdbcType=VARCHAR} -- 에러코드
+            , #{errorMessage,   mode=OUT, 	  jdbcType=VARCHAR} -- 에러메세지
+            )
+            }
+    </select>
+</mapper>

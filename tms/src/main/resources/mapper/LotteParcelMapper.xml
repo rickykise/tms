@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ai.fassto.tms.dataaccess.parcel.lotte.repository.mybatis.LotteParcelMapper">
+    <!-- 접수등록 조회 -->
+    <select id="isRegisteredInvoice"
+            parameterType="ai.fassto.tms.dataaccess.parcel.lotte.dto.SelectRegisteredInvoiceDto"
+            resultType="ai.fassto.tms.dataaccess.parcel.lotte.dto.CheckRegisteredInvoiceDto">
+        /* PID : LotteParcelMapper.isRegisteredInvoice */
+        SELECT COUNT(*)
+        FROM VFSS_PUT
+        WHERE WK_SCT = #{wkSct}
+                  AND SUPER_CUST_CD = #{superCustCd}
+                  AND ORD_NO LIKE #{custUseNo} || '%'
+    </select>
+
+    <insert id="insertInvoice" parameterType="ai.fassto.tms.dataaccess.parcel.lotte.dto.RegisterParcelDto">
+        /* PID : LotteParcelMapper.insertInvoice */
+        INSERT INTO VFSS_PUT
+        ( SEND_YMD -- 전송일자
+        , SEND_TME -- 전송시간
+        , ACPT_SSEQ -- 전송차수
+        , WK_SCT -- 업무구분
+        , ORD_NO -- 배송예약번호
+        , INV_NO -- 운송장번호
+        , SUPER_CUST_CD -- 대표거래처코드
+        , CUST_CD -- 택배사고객번호
+        , ITEM_SIZE -- Box크기(1:소,2:중,3:대)
+        , ITEM_NM -- 상품명
+        , QTY -- 수량
+        , DLV_MSG -- 배송메세지
+        , ACPER_NM -- 받는자명
+        , ACPER_TEL -- 받는자전화
+        , ACPER_HTEL -- 받는자휴대폰
+        , ACPER_ZIP_NO -- 받는자우편번호
+        , ACPER_ADDR -- 받는자주소
+        , SNPER_NM -- 보내는자명
+        , SNPER_TEL -- 보내는자전화
+        , SNPER_HTEL -- 보내는자휴대폰
+        , SNPER_ZIP_NO -- 보내는자우편번호
+        , SNPER_ADDR -- 보내는자주소
+        , CON_FLG -- 결제구분 운임구분(001:신용, 003:착불)
+        , SUM_FARE -- 운임
+        , ORG_INV_NO -- 원송장번호
+        , PICK_REQ_YMD -- 집하요청일
+        , TRS_STAT_CD -- 전송상태
+        )
+        VALUES ( TO_CHAR(SYSDATE, 'YYYYMMDD') -- 전송일자
+               , TO_CHAR(SYSDATE, 'HH24MISS') -- 전송시간
+               , #{acptSseq} -- 전송차수
+               , #{wkSct} -- 업무구분
+               , #{ordNo} -- 배송예약번호
+               , #{invNo} -- 운송장번호
+               , #{superCustCd} -- 대표거래처코드
+               , #{custCd} -- 택배사고객번호
+               , #{itemSize} -- Box크기(1:소,2:중,3:대)
+               , #{itemNm} -- 상품명
+               , #{qty} -- 수량
+               , TRIM(SUBSTRB(#{dlvMsg}, 1, 100)) -- 배송메세지
+               , TRIM(SUBSTRB(#{acperNm}, 1, 20)) -- 받는자명
+               , #{acperTel} -- 받는자전화
+               , #{acperHtel} -- 받는자휴대폰
+               , #{acperZipNo} -- 받는자우편번호
+               , #{acperAddr} -- 받는자주소
+               , TRIM(SUBSTRB(#{snperNm}, 1, 20)) -- 보내는자명
+               , #{snperTel} -- 보내는자전화
+               , #{snperHtel} -- 보내는자휴대폰
+               , #{snperZipNo} -- 보내는자우편번호
+               , #{snperAddr} -- 보내는자주소
+               , #{conFlg} -- 결제구분
+               , #{sumFare} -- 운임
+               , NVL(#{orgInvNo}, '999999999999') -- 원송장번호, 업무구분이 002(반품일때)필수(없을시 999999999999)
+               , TO_CHAR(SYSDATE, 'YYYYMMDD') -- 집하요청일, 20190102: 실제 집하요청일자,전송일자와 동일처리
+               , #{trsStatCd} -- 전송상태, 1:고정값
+               )
+    </insert>
+</mapper>

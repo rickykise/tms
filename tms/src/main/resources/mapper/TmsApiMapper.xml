@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ai.fassto.tms.dataaccess.common.repository.mybatis.TmsApiMapper">
+    <insert id="insertTmsResponseData"
+            parameterType="ai.fassto.tms.dataaccess.common.dto.TmsInsertApiResponseDto">
+        /* PID : TmsApiMapper.insertTmsResponseData */
+        INSERT INTO TB_TMS_API_RESP_DATA
+        ( OUT_ORD_SLIP_NO
+        , TMS_RESP_TYPE
+        , TMS_RESP_STATUS)
+        VALUES ( #{slipNo}
+               , #{apiType.type}
+               , #{status})
+    </insert>
+
+    <update id="updateTmsResponseData"
+            parameterType="ai.fassto.tms.dataaccess.common.dto.TmsUpdateApiResponseDto">
+        /* PID : TmsApiMapper.updateTmsResponseData */
+        UPDATE TB_TMS_API_RESP_DATA
+        SET TMS_RESP_STATUS = #{status}
+          , TMS_RESP_JSON   = #{response}
+          , UPD_TIME        = current_timestamp()
+        WHERE OUT_ORD_SLIP_NO = #{slipNo}
+          AND TMS_RESP_TYPE = #{apiType.type}
+    </update>
+
+    <select id="selectTmsResponseData"
+            parameterType="ai.fassto.tms.dataaccess.common.dto.TmsSelectApiResponseDto"
+            resultType="ai.fassto.tms.dataaccess.common.dto.TmsApiResponseDto">
+        /* PID : TmsApiMapper.selectTmsResponseData */
+        SELECT TMS_RESP_JSON   AS response
+             , TMS_RESP_STATUS AS status
+        FROM TB_TMS_API_RESP_DATA
+        WHERE OUT_ORD_SLIP_NO = #{slipNo}
+          AND TMS_RESP_TYPE = #{apiType.type}
+    </select>
+</mapper>

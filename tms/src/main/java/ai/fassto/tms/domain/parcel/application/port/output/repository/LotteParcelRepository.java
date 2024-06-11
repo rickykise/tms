@@ -1,0 +1,9 @@
+package ai.fassto.tms.domain.parcel.application.port.output.repository;
+
+import ai.fassto.tms.domain.parcel.application.vo.Parcel;
+
+public interface LotteParcelRepository {
+    void checkIsRegisteredInvoice(Parcel parcel);
+
+    void registerParcel(Parcel parcel);
+}
